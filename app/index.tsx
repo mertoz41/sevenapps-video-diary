@@ -1,10 +1,18 @@
-import { View, StyleSheet, Button } from "react-native";
-import { useState } from "react";
+import { View, Button } from "react-native";
+import { useState, useEffect } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { UploadModal } from "@/components/UploadModal";
+import { useSQLiteContext } from "expo-sqlite";
+import PostItem from "@/components/PostItem";
 export default function MainScreen() {
   const [modalOpen, setModalOpen] = useState(false);
   const [videoUri, setVideoUri] = useState("");
+  const [allVideos, setAllVideos] = useState<any>([]);
+  const db = useSQLiteContext();
+
+  useEffect(() => {
+    getData();
+  }, []);
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["videos"],
@@ -22,11 +30,24 @@ export default function MainScreen() {
     }
   };
 
+  const getData = async () => {
+    const result = await db.getAllAsync<any>("SELECT * FROM post");
+    setAllVideos(result);
+  };
+
   return (
     <View className="flex-1 justify-center items-center h-full w-full bg-white">
       <View className="bg-red-500">
         <Button title="Pick an image from camera roll" onPress={pickImage} />
       </View>
+      {allVideos.map((vid: any) => (
+        <PostItem
+          video={vid.video_uri}
+          name={vid.name}
+          description={vid.description}
+        />
+      ))}
+
       <UploadModal
         isOpen={modalOpen}
         videoUri={videoUri}

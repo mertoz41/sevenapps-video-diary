@@ -10,6 +10,7 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import { useEvent } from "expo";
 import { useState } from "react";
 import { FFmpegKit } from "ffmpeg-kit-react-native";
+import { useSQLiteContext } from "expo-sqlite";
 
 type PROPS = ModalProps & {
   isOpen: boolean;
@@ -26,6 +27,8 @@ export const UploadModal = ({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [trimmedVideo, setTrimmedVideo] = useState("");
+  const db = useSQLiteContext();
+
   const player = useVideoPlayer(trimmedVideo, (player) => {
     player.loop = true;
     player.play();
@@ -44,7 +47,12 @@ export const UploadModal = ({
     FFmpegKit.execute(
       `-y -ss 0 -i ${newVidUri} -t 5 -c copy ${outputUri}`
     ).then(async (session) => {
-      const output = await session.getOutput();
+      await db.runAsync(
+        "INSERT INTO post (video_uri, name, description) VALUES (?, ?,?)",
+        outputUri,
+        name,
+        description
+      );
       setTrimmedVideo(outputUri);
     });
   };
