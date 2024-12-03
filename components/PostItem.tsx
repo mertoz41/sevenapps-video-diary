@@ -1,7 +1,7 @@
 import { View, Pressable, Text } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEvent } from "expo";
-
+import { useEffect } from "react";
 const PostItem = ({
   video,
   name,

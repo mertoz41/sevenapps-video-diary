@@ -1,42 +1,30 @@
-import { View, Button, FlatList, Text, ActivityIndicator } from "react-native";
+import {
+  View,
+  Button,
+  FlatList,
+  Modal,
+  Text,
+  ActivityIndicator,
+  ScrollView,
+} from "react-native";
 import { useState, useEffect } from "react";
-import * as ImagePicker from "expo-image-picker";
-import { UploadModal } from "@/components/UploadModal";
+import UploadModal from "@/components/UploadModal";
 import { useSQLiteContext } from "expo-sqlite";
 import PostItem from "@/components/PostItem";
-import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { usePostStore } from "@/stores";
+import { SafeAreaView } from "react-native-safe-area-context";
+
 export default function MainScreen() {
   const [modalOpen, setModalOpen] = useState(false);
-  const [videoUri, setVideoUri] = useState("");
-  const [allVideos, setAllVideos] = useState<any>([]);
   const db = useSQLiteContext();
-  const { posts, loading, error, fetchPosts } = usePostStore();
+  const { loading, error, fetchPosts } = usePostStore();
+  const posts = usePostStore((state) => state.posts);
+
   useEffect(() => {
     fetchPosts(db);
+    // deleteAll();
   }, [fetchPosts]);
-  const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["videos"],
-      allowsEditing: false,
-      aspect: [4, 3],
-      quality: 1,
-    });
-    if (!result.canceled) {
-      setVideoUri(result.assets[0].uri);
 
-      // time needed for picker to close for modal to open
-      setInterval(() => {
-        setModalOpen(true);
-      }, 1000);
-    }
-  };
-
-  // const getData = async () => {
-  //   const result = await db.getAllAsync<any>("SELECT * FROM post");
-  //   // console.log(result);
-  //   setAllVideos(result);
-  // };
   const deleteAll = async () => {
     await db.execAsync("DELETE FROM post");
   };
@@ -56,8 +44,12 @@ export default function MainScreen() {
             Recently added
           </Text>
         </View>
+
+        <SafeAreaView className="flex-1 justify-center items-center bg-gray-100">
+          <Button title="Show Modal" onPress={() => setModalOpen(true)} />
+        </SafeAreaView>
         <View className="flex-initial w-32">
-          <Button title="upload" onPress={pickImage} />
+          <UploadModal isOpen={modalOpen} setModalOpen={setModalOpen} />
         </View>
       </View>
 
@@ -76,12 +68,6 @@ export default function MainScreen() {
           keyExtractor={(item) => item.id}
         />
       </View>
-
-      <UploadModal
-        isOpen={modalOpen}
-        videoUri={videoUri}
-        setModalOpen={setModalOpen}
-      />
     </View>
   );
 }
