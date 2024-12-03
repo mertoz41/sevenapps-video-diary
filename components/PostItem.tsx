@@ -19,7 +19,7 @@ const PostItem = ({
     isPlaying: player.playing,
   });
   return (
-    <View>
+    <View className="bg-red-500">
       <Pressable onPress={() => (isPlaying ? player.pause() : player.play())}>
         <VideoView
           style={{ height: 400, width: 120 }}

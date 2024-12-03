@@ -1,9 +1,11 @@
-import { View, Button } from "react-native";
+import { View, Button, FlatList } from "react-native";
 import { useState, useEffect } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { UploadModal } from "@/components/UploadModal";
 import { useSQLiteContext } from "expo-sqlite";
 import PostItem from "@/components/PostItem";
+import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
+
 export default function MainScreen() {
   const [modalOpen, setModalOpen] = useState(false);
   const [videoUri, setVideoUri] = useState("");
@@ -12,6 +14,7 @@ export default function MainScreen() {
 
   useEffect(() => {
     getData();
+    // deleteAll()
   }, []);
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -32,21 +35,48 @@ export default function MainScreen() {
 
   const getData = async () => {
     const result = await db.getAllAsync<any>("SELECT * FROM post");
+    // console.log(result);
     setAllVideos(result);
+  };
+  const deleteAll = async () => {
+    await db.execAsync("DELETE FROM post");
   };
 
   return (
-    <View className="flex-1 justify-center items-center h-full w-full bg-white">
+    <View className="flex-1 h-full w-full justify-center bg-white">
       <View className="bg-red-500">
         <Button title="Pick an image from camera roll" onPress={pickImage} />
       </View>
-      {allVideos.map((vid: any) => (
+      <SafeAreaProvider>
+        <SafeAreaView className="bg-red-700 flex-1 w-full h-full justify-center items-center">
+          {allVideos.length ? (
+            <FlatList
+              contentContainerStyle={{
+                flex: 1,
+                backgroundColor: "green",
+                padding: 10,
+              }}
+              data={allVideos}
+              renderItem={({ item }) => (
+                <PostItem
+                  video={item.video_uri}
+                  name={item.name}
+                  description={item.description}
+                />
+              )}
+              keyExtractor={(item) => item.id}
+            />
+          ) : null}
+        </SafeAreaView>
+      </SafeAreaProvider>
+      {/* {allVideos.map((item: any) => (
         <PostItem
-          video={vid.video_uri}
-          name={vid.name}
-          description={vid.description}
+          key={item.id}
+          video={item.video_uri}
+          name={item.name}
+          description={item.description}
         />
-      ))}
+      ))} */}
 
       <UploadModal
         isOpen={modalOpen}
