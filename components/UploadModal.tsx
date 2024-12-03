@@ -17,7 +17,6 @@ type PROPS = ModalProps & {
   isOpen: boolean;
   videoUri: string;
   setModalOpen: any;
-  setVideoUri: any;
 };
 
 const trimVideo = async (videoUri: string) => {
@@ -35,7 +34,7 @@ const trimVideo = async (videoUri: string) => {
   );
   return outputUri;
 };
-export const UploadModal = ({ isOpen, videoUri }: PROPS) => {
+export const UploadModal = ({ isOpen, videoUri, setModalOpen }: PROPS) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const db = useSQLiteContext();
@@ -57,6 +56,7 @@ export const UploadModal = ({ isOpen, videoUri }: PROPS) => {
         name: name,
         description: description,
       });
+      setModalOpen(false);
     },
   });
 

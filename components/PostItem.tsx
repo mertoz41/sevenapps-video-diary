@@ -13,23 +13,23 @@ const PostItem = ({
 }) => {
   const player = useVideoPlayer(video, (player) => {
     player.loop = true;
-    player.play();
+    // player.play();
   });
   const { isPlaying } = useEvent(player, "playingChange", {
     isPlaying: player.playing,
   });
   return (
-    <View className="bg-red-500">
+    <View className="w-1/3">
       <Pressable onPress={() => (isPlaying ? player.pause() : player.play())}>
         <VideoView
-          style={{ height: 400, width: 120 }}
+          style={{ height: 100, width: 300 }}
           player={player}
           nativeControls={false}
-          allowsPictureInPicture
+          contentFit="contain"
         />
       </Pressable>
-      <Text>{name}</Text>
-      <Text>{description}</Text>
+      {/* <Text>{name}</Text>
+      <Text>{description}</Text> */}
     </View>
   );
 };
