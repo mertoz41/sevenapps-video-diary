@@ -1,50 +1,47 @@
-# Welcome to your Expo app 👋
+# Video Diary App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## Overview
 
-## Get started
+The Video Diary App allows users to import videos, crop specific 5-second segments, add metadata (such as name and description), and save the cropped videos for future reference. The app features a clean and efficient user interface, built with modern React Native practices, and ensures scalability and performance by leveraging state management and asynchronous operations.
 
-1. Install dependencies
+## Installation & Development Environment
+Install necessary packages upon cloning the repo.
 
-   ```bash
-   npm install
-   ```
+```npm i```
 
-2. Start the app
+Due to native modules used in this project, it cannot be opened on expo go and a development build is necessary. 
 
-   ```bash
-    npx expo start
-   ```
+For simulator
 
-In the output, you'll find options to open the app in a
+```eas build --profile development-simulator --platform ios```
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+For physical device
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+```eas build --profile development --platform ios```
 
-## Get a fresh project
 
-When you're ready, run:
+Run the app
 
-```bash
-npm run reset-project
-```
+```npx expo start --dev-client```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
-## Learn more
+## Technologies Used
+• Expo: Base framework for React Native development.
 
-To learn more about developing your project with Expo, look at the following resources:
+• Expo Router: For implementing app navigation.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+• Zustand: State management solution.
 
-## Join the community
+• Tanstack Query: To manage async logic and the FFMPEG cropping process.
 
-Join our community of developers creating universal apps.
+• FFMPEG: Core library for video processing.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+• NativeWind: Styling solution.
+
+• Expo Video: Video rendering and playback (or any suitable alternative).
+
+• Expo SQLite: For structured, persistent storage.
+
+• Zod/Yup: Validation schemas for form handling.
+
+
