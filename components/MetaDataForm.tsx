@@ -1,5 +1,5 @@
-import { View, Text, TextInput, TouchableOpacity, Button } from "react-native";
-import { useForm, Controller } from "react-hook-form";
+import { View, Text, TextInput, TouchableOpacity } from "react-native";
+import { useForm, Controller, FieldError } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -11,7 +11,13 @@ const formSchema = z.object({
     .string()
     .min(10, { message: "Description must be at least 10 characters long" }),
 });
-const MetaDataForm = ({ submitForm }: { submitForm: any }) => {
+const MetaDataForm = ({
+  submitForm,
+  buttonTitle,
+}: {
+  submitForm: (data: any) => void;
+  buttonTitle: string;
+}) => {
   const {
     control,
     handleSubmit,
@@ -24,51 +30,64 @@ const MetaDataForm = ({ submitForm }: { submitForm: any }) => {
     submitForm(data);
   };
   return (
-    <View className="flex-1 justify-center items-center bg-gray-100 p-4">
-      <View className="mb-4 w-full">
-        <Text className="text-xl font-medium mb-2">Name</Text>
+    <View>
+      <Text className="text-3xl mb-4 font-semibold text-center mt-10">
+        {buttonTitle == "upload" ? "enter " : "edit "}metadata
+      </Text>
+
+      <View className="w-full mb-4">
         <Controller
           control={control}
           name="name"
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
               onBlur={onBlur}
-              className="border border-gray-300 p-3 w-full rounded-lg text-lg"
+              className={"border-2 p-4 rounded-2xl text-2xl"}
               onChangeText={onChange}
               value={value}
+              placeholderTextColor={"rgba(0, 0, 0, 0.3)"}
               placeholder="enter name"
             />
           )}
         />
-        {errors.name && (
-          <Text className="text-red-500 text-lg font-bold">
-            {errors.name.message}
-          </Text>
-        )}
+        <View className="h-4">
+          {errors.name && (
+            <Text className="text-red-500 font-bold">
+              {(errors.name as FieldError).message}
+            </Text>
+          )}
+        </View>
       </View>
 
-      <View className="mb-6">
-        <Text className="text-xl font-medium mb-2">Description</Text>
+      <View className="w-full mb-6">
         <Controller
           control={control}
           name="description"
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              className="border border-gray-300 p-3 rounded-lg text-lg"
+              className="border-2 p-4 rounded-2xl text-2xl"
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
+              placeholderTextColor={"rgba(0, 0, 0, 0.3)"}
               placeholder="enter description"
             />
           )}
         />
-        {errors.description && (
-          <Text className="text-red-500 text-lg font-bold">
-            {errors.description.message}
-          </Text>
-        )}
+        <View className="h-10">
+          {errors.description && (
+            <Text className="text-red-500 font-bold">
+              {(errors.description as FieldError).message}
+            </Text>
+          )}
+        </View>
       </View>
-      <Button title="upload" onPress={handleSubmit(onSubmit)} />
+      <TouchableOpacity
+        className="px-4 py-2 border-2 border-black rounded-full self-center"
+        onPress={handleSubmit(onSubmit)}
+      >
+        <Text className="text-black text-lg font-medium">{buttonTitle}</Text>
+      </TouchableOpacity>
     </View>
   );
 };

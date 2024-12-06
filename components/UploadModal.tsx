@@ -3,11 +3,10 @@ import {
   ModalProps,
   View,
   Keyboard,
-  StyleSheet,
   Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { useState } from "react";
 import { FFmpegKit } from "ffmpeg-kit-react-native";
@@ -19,10 +18,10 @@ import { useEffect } from "react";
 import MetaDataForm from "./MetaDataForm";
 import VideoSlider from "./VideoSlider";
 import { formatMilliseconds } from "@/utils";
+import AntDesign from "@expo/vector-icons/AntDesign";
 type PROPS = ModalProps & {
   isOpen: boolean;
   setModalOpen: any;
-  videoUri: string;
 };
 
 type NewPost = {
@@ -54,30 +53,39 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
   const [displayInputs, setDisplayInputs] = useState(false);
   const [duration, setDuration] = useState(0);
   const [vidStartTime, setVidStartTime] = useState("");
+  const [loading, setLoading] = useState(false);
   const { addPost } = usePostStore();
+
   useEffect(() => {
     return setVideoUri("");
   }, []);
   const uploadVideo = async (postData: NewPost) => {
-    const result = await db.runAsync(
-      "INSERT INTO post (video_uri, name, description) VALUES (?, ?,?)",
-      postData.video_uri,
-      postData.name,
-      postData.description
-    );
-    return result.lastInsertRowId;
+    try {
+      const result = await db.runAsync(
+        "INSERT INTO post (video_uri, name, description) VALUES (?, ?,?)",
+        postData.video_uri,
+        postData.name,
+        postData.description
+      );
+      return result.lastInsertRowId;
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const pickVideo = async () => {
+    setLoading(true);
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["videos"],
       allowsEditing: false,
       aspect: [4, 3],
       quality: 1,
     });
+
     if (!result.canceled) {
-      setDuration(result.assets[0].duration);
+      setDuration(result.assets[0].duration as number);
       setVideoUri(result.assets[0].uri);
+      setLoading(false);
     }
   };
 
@@ -96,8 +104,10 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
 
   const clearState = () => {
     setModalOpen(false);
-    setVideoUri("");
     setDisplayInputs(false);
+    setVideoUri("");
+    setDuration(0);
+    setVidStartTime("");
   };
 
   const handleProcessVideo = (data: any) => {
@@ -110,6 +120,20 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
     setDisplayInputs(true);
   };
 
+  const renderHeader = () => {
+    return (
+      <View className="flex-row justify-between ">
+        <Text className="text-3xl font-bold self-end">New Post</Text>
+        <TouchableOpacity
+          className="p-1 border-2 border-black rounded-full self-center"
+          onPress={() => clearState()}
+        >
+          <AntDesign name="close" size={24} color="black" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   return (
     <Modal
       animationType="fade"
@@ -118,64 +142,42 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
       onRequestClose={() => setModalOpen(false)}
     >
       <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View className="flex-row justify-between items-center bg-red-500">
-              <Text className="text-3xl font-bold">new post</Text>
-              <TouchableOpacity onPress={() => clearState()}>
-                <Text className="text-3xl font-bold self-end text-gray-500">
-                  X
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView>
-              {displayInputs ? (
-                <MetaDataForm submitForm={handleProcessVideo} />
-              ) : null}
+        <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="bg-white w-4/5 p-6 h-3/4 rounded-lg shadow-md">
+            {renderHeader()}
 
-              <View className="flex-1 justify-start items-center mt6">
-                {videoUri && !displayInputs ? (
-                  <VideoSlider
-                    saveStartTime={saveStartTime}
-                    videoUri={videoUri}
-                    duration={duration}
-                  />
-                ) : displayInputs ? null : (
-                  <TouchableOpacity
-                    className="px-4 py-2 bg-blue-500 rounded-full self-center my-12"
-                    onPress={() => pickVideo()}
-                  >
-                    <Text className="text-white text-3xl">choose video</Text>
-                  </TouchableOpacity>
-                )}
+            {displayInputs ? (
+              <MetaDataForm
+                submitForm={handleProcessVideo}
+                buttonTitle={"upload"}
+              />
+            ) : null}
+            {loading ? (
+              <View className="flex-1 justify-center">
+                <ActivityIndicator className="justify-center" />
               </View>
-            </ScrollView>
+            ) : null}
+            {videoUri && !displayInputs ? (
+              <VideoSlider
+                saveStartTime={saveStartTime}
+                videoUri={videoUri}
+                duration={duration}
+              />
+            ) : displayInputs ? null : (
+              <View className="justify-center flex-1">
+                <TouchableOpacity
+                  className="px-4 py-2 border-2 border-black rounded-full align-middle self-center"
+                  onPress={() => pickVideo()}
+                >
+                  <Text className="text-black text-3xl">select video</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       </TouchableWithoutFeedback>
     </Modal>
   );
 };
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)", 
-  },
-  modalContent: {
-    width: "80%",
-    height: 650,
-    padding: 20,
-    backgroundColor: "white",
-    borderRadius: 10,
-    alignItems: "center",
-    elevation: 5, // Shadow for Android
-    shadowColor: "#000", // Shadow for iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-});
 
 export default UploadModal;

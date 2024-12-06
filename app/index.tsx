@@ -13,12 +13,12 @@ import { usePostStore } from "@/stores";
 
 export default function MainScreen() {
   const [modalOpen, setModalOpen] = useState(false);
-  const [videoUri, setVideoUri] = useState("");
   const [viewingIndex, setViewingIndex] = useState(0);
   const db = useSQLiteContext();
   const { error, fetchPosts } = usePostStore();
   const posts = usePostStore((state) => state.posts);
   const loading = usePostStore((state) => state.loading);
+
   const viewabilityConfig = {
     waitForInteraction: true,
     viewAreaCoveragePercentThreshold: 70,
@@ -27,7 +27,6 @@ export default function MainScreen() {
     fetchPosts(db);
     // deleteAll();
   }, [fetchPosts]);
-  // console.log(posts);
   const deleteAll = async () => {
     await db.execAsync("DELETE FROM post");
   };
@@ -60,28 +59,24 @@ export default function MainScreen() {
   }
 
   return (
-    <View className="flex-1 h-full w-full  bg-white">
+    <View className="flex-1 h-full w-full justify-center  bg-white">
       {renderHeader()}
-      <UploadModal
-        videoUri={videoUri}
-        isOpen={modalOpen}
-        setModalOpen={setModalOpen}
+      <UploadModal isOpen={modalOpen} setModalOpen={setModalOpen} />
+      <FlatList
+        viewabilityConfig={viewabilityConfig}
+        contentContainerStyle={{ marginTop: 5 }}
+        onViewableItemsChanged={viewableItemChanged}
+        data={posts}
+        renderItem={({ item, index }) => (
+          <PostItem
+            key={item.id}
+            post={item}
+            modalOpen={modalOpen}
+            index={index}
+            viewingIndex={viewingIndex}
+          />
+        )}
       />
-      <View className="flex-1">
-        <FlatList
-          viewabilityConfig={viewabilityConfig}
-          onViewableItemsChanged={viewableItemChanged}
-          data={posts}
-          renderItem={({ item, index }) => (
-            <PostItem
-              key={item.id}
-              post={item}
-              index={index}
-              viewingIndex={viewingIndex}
-            />
-          )}
-        />
-      </View>
     </View>
   );
 }

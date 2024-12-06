@@ -10,9 +10,9 @@ const VideoSlider = ({
 }: {
   videoUri: string;
   duration: number;
-  saveStartTime: any;
+  saveStartTime: (num: number) => void;
 }) => {
-  const videoRef = useRef(null);
+  const videoRef = useRef<any>(null);
   const [sliderValue, setSliderValue] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [loopEnd, setLoopEnd] = useState(5000);
@@ -52,9 +52,12 @@ const VideoSlider = ({
           isLooping
           shouldPlay={isPlaying}
           onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
-          style={{ height: 500, width: 270 }}
+          style={{ height: 450, width: 270 }}
         />
       </Pressable>
+      <Text className="text-center mt-2">
+        5 seconds after the marker will be trimmed
+      </Text>
 
       <Slider
         style={{ width: 270, height: 40 }}
@@ -67,10 +70,10 @@ const VideoSlider = ({
         maximumTrackTintColor="#000000"
       />
       <TouchableOpacity
-        className="px-4 py-2 bg-blue-500 rounded-full self-center my-12"
+        className="px-4 py-2 border-2 border-black rounded-full self-center "
         onPress={() => saveStartTime(loopStart)}
       >
-        <Text className="text-white text-3xl">advance</Text>
+        <Text className="text-black text-3xl">advance</Text>
       </TouchableOpacity>
     </View>
   );
