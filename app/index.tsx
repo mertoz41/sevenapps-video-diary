@@ -1,33 +1,45 @@
 import {
   View,
-  Button,
-  FlatList,
-  Modal,
   Text,
   ActivityIndicator,
-  ScrollView,
+  TouchableOpacity,
+  FlatList,
 } from "react-native";
 import { useState, useEffect } from "react";
 import UploadModal from "@/components/UploadModal";
 import { useSQLiteContext } from "expo-sqlite";
 import PostItem from "@/components/PostItem";
 import { usePostStore } from "@/stores";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MainScreen() {
   const [modalOpen, setModalOpen] = useState(false);
+  const [videoUri, setVideoUri] = useState("");
   const db = useSQLiteContext();
-  const { loading, error, fetchPosts } = usePostStore();
+  const { error, fetchPosts } = usePostStore();
   const posts = usePostStore((state) => state.posts);
-
+  const loading = usePostStore((state) => state.loading);
   useEffect(() => {
     fetchPosts(db);
     // deleteAll();
   }, [fetchPosts]);
-
+  console.log(posts);
   const deleteAll = async () => {
     await db.execAsync("DELETE FROM post");
   };
+
+  const renderHeader = () => (
+    <View className="flex-row items-center h-24 justify-between px-4 py-3 bg-white shadow-md">
+      <Text className="text-3xl font-boldtext-gray-500 self-end">
+        Recently Added
+      </Text>
+      <TouchableOpacity
+        className="px-4 py-2 border-2 border-black rounded-full self-end"
+        onPress={() => setModalOpen(true)}
+      >
+        <Text className="text-black font-medium">add new</Text>
+      </TouchableOpacity>
+    </View>
+  );
   if (loading) {
     return <ActivityIndicator size="large" color="#0000ff" />;
   }
@@ -38,33 +50,16 @@ export default function MainScreen() {
 
   return (
     <View className="flex-1 h-full w-full  bg-white">
-      <View className="flex-row justify-between mt-16 border-b-2">
-        <View>
-          <Text className="flex-initial w-64 text-3xl self-end">
-            Recently added
-          </Text>
-        </View>
-
-        <SafeAreaView className="flex-1 justify-center items-center bg-gray-100">
-          <Button title="Show Modal" onPress={() => setModalOpen(true)} />
-        </SafeAreaView>
-        <View className="flex-initial w-32">
-          <UploadModal isOpen={modalOpen} setModalOpen={setModalOpen} />
-        </View>
-      </View>
-
-      <View className="flex-1 flex-wrap bg-red-300 w-full">
+      {renderHeader()}
+      <UploadModal
+        videoUri={videoUri}
+        isOpen={modalOpen}
+        setModalOpen={setModalOpen}
+      />
+      <View className="flex-1">
         <FlatList
-          contentContainerClassName=" flex-wrap bg-blue-400 w-full"
           data={posts}
-          horizontal
-          renderItem={({ item }) => (
-            <PostItem
-              video={item.video_uri}
-              name={item.name}
-              description={item.description}
-            />
-          )}
+          renderItem={({ item }) => <PostItem key={item.id} post={item} />}
           keyExtractor={(item) => item.id}
         />
       </View>

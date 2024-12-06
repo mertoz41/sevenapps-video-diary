@@ -2,9 +2,13 @@ import {
   Modal,
   ModalProps,
   View,
-  TextInput,
-  Button,
+  Keyboard,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
   Pressable,
+  TouchableWithoutFeedback,
+  ScrollView,
 } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEvent } from "expo";
@@ -14,9 +18,19 @@ import { useSQLiteContext } from "expo-sqlite";
 import { useMutation } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import { usePostStore } from "@/stores";
+import * as VideoThumbnails from "expo-video-thumbnails";
+import MetaDataForm from "./MetaDataForm";
 type PROPS = ModalProps & {
   isOpen: boolean;
   setModalOpen: any;
+  videoUri: string;
+};
+
+type NewPost = {
+  video_uri: string;
+  thumbnail: string;
+  name: string;
+  description: string;
 };
 
 const trimVideo = async (videoUri: string) => {
@@ -27,31 +41,41 @@ const trimVideo = async (videoUri: string) => {
     videoUri.lastIndexOf("/")
   )}/${randomString}.mp4`;
 
-  FFmpegKit.execute(`-y -ss 0 -i ${newVidUri} -t 5 -c copy ${outputUri}`).then(
-    async (session) => {
-      return outputUri;
-    }
-  );
+  await FFmpegKit.execute(
+    `-y -ss 0 -i ${newVidUri} -t 5 -c copy ${outputUri}`
+  ).then(async (session) => {
+    return outputUri;
+  });
   return outputUri;
 };
+
 const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [videoUri, setVideoUri] = useState("");
   const db = useSQLiteContext();
-  const { loading, error, addPost } = usePostStore();
+  const [displayInputs, setDisplayInputs] = useState(false);
+  const { addPost } = usePostStore();
 
-  const uploadVideo = async (postData: any) => {
+  const uploadVideo = async (postData: NewPost) => {
     const result = await db.runAsync(
-      "INSERT INTO post (video_uri, name, description) VALUES (?, ?,?)",
+      "INSERT INTO post (video_uri, thumbnail, name, description) VALUES (?, ?, ?,?)",
       postData.video_uri,
+      postData.thumbnail,
       postData.name,
       postData.description
     );
     return result.lastInsertRowId;
   };
 
-  const pickImage = async () => {
+  const generateThumbnail = async (video: string) => {
+    const { uri } = await VideoThumbnails.getThumbnailAsync(video, {
+      time: 15000,
+    });
+    return uri;
+  };
+
+  const pickVideo = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["videos"],
       allowsEditing: false,
@@ -74,22 +98,27 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
   const mutation = useMutation({
     mutationFn: async (video: string) => {
       const trimmedVideo = await trimVideo(video);
+      const thumbnail = await generateThumbnail(trimmedVideo);
       let postData = {
         video_uri: trimmedVideo,
+        thumbnail: thumbnail,
         name: name,
         description: description,
       };
       const result = await uploadVideo(postData);
       addPost({ ...postData, id: result });
       clearState();
-      setModalOpen(false);
     },
   });
 
   const clearState = () => {
-    setVideoUri("");
-    setName("");
-    setDescription("");
+    setModalOpen(false);
+    setInterval(() => {
+      setVideoUri("");
+      setDisplayInputs(false);
+      setName("");
+      setDescription("");
+    }, 1000);
   };
 
   const handleProcessVideo = () => {
@@ -98,49 +127,96 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
 
   return (
     <Modal
-      visible={isOpen}
-      animationType="slide"
+      animationType="fade"
       transparent={true}
-      onRequestClose={() => setModalOpen(false)}
+      visible={isOpen}
+      onRequestClose={() => setModalOpen(false)} // Handles the back button on Android
     >
-      {/* Modal Overlay */}
-      <View className="flex-1 justify-center items-center bg-black/50">
-        {/* Modal Content */}
-        <View className="bg-white w-11/12 h-3/4 rounded-lg p-4">
-          <Button title="Select video" onPress={() => pickImage()} />
+      <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View className="flex-row justify-between items-center bg-red-500">
+              <Text className="text-3xl font-bold">new post</Text>
+              <TouchableOpacity onPress={() => clearState()}>
+                <Text className="text-3xl font-bold self-end text-gray-500">
+                  X
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView>
+              {displayInputs ? (
+                <MetaDataForm
+                  setName={setName}
+                  setDescription={setDescription}
+                  name={name}
+                  description={description}
+                />
+              ) : null}
 
-          {videoUri ? (
-            <Pressable
-              onPress={() => (isPlaying ? player.pause() : player.play())}
-            >
-              <VideoView
-                style={{ height: 200, width: 120 }}
-                player={player}
-                nativeControls={false}
-                allowsPictureInPicture
-              />
-            </Pressable>
-          ) : null}
-          <TextInput
-            placeholder="Name"
-            className="text-2xl placeholder-red-500 placeholder-opacity-100 italic text-black font-bold mb-4 bg-red-400"
-            onChangeText={setName}
-            value={name}
-          />
-          <TextInput
-            placeholder="Description"
-            onChangeText={setDescription}
-            value={description}
-            className="text-lg font-bold mb-4"
-          />
-          {videoUri ? (
-            <Button title="submit" onPress={handleProcessVideo} />
-          ) : null}
-          <Button title="cancel" onPress={() => setModalOpen(false)} />
+              <View className="flex-1 justify-start items-center mt6">
+                {videoUri ? (
+                  <Pressable
+                    onPress={() => (isPlaying ? player.pause() : player.play())}
+                  >
+                    <VideoView
+                      style={{ height: 500, width: 270 }}
+                      player={player}
+                      nativeControls={false}
+                      allowsPictureInPicture
+                    />
+                  </Pressable>
+                ) : (
+                  <TouchableOpacity
+                    className="px-4 py-2 bg-blue-500 rounded-full self-center my-12"
+                    onPress={() => pickVideo()}
+                  >
+                    <Text className="text-white text-3xl">choose video</Text>
+                  </TouchableOpacity>
+                )}
+
+                {!videoUri ? null : displayInputs ? (
+                  <TouchableOpacity
+                    className="px-4 py-2 bg-blue-500 rounded-full self-center my-12"
+                    onPress={() => handleProcessVideo()}
+                  >
+                    <Text className="text-white text-3xl">upload</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    className="px-4 py-2 bg-blue-500 rounded-full self-center my-12"
+                    onPress={() => setDisplayInputs(true)}
+                  >
+                    <Text className="text-white text-3xl">advance</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </ScrollView>
+          </View>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 };
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent background
+  },
+  modalContent: {
+    width: "80%",
+    height: 650,
+    padding: 20,
+    backgroundColor: "white",
+    borderRadius: 10,
+    alignItems: "center",
+    elevation: 5, // Shadow for Android
+    shadowColor: "#000", // Shadow for iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+});
 
 export default UploadModal;

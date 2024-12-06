@@ -42,7 +42,12 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <Stack>
             <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="+not-found" />
+            <Stack.Screen
+              name="details/[id]"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen name="edit/[id]" options={{ headerShown: false }} />
+
           </Stack>
           <StatusBar style="auto" />
         </QueryClientProvider>
