@@ -19,7 +19,9 @@ import { useMutation } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import { usePostStore } from "@/stores";
 import * as VideoThumbnails from "expo-video-thumbnails";
+import { useEffect } from "react";
 import MetaDataForm from "./MetaDataForm";
+import { PostSchema } from "@/types";
 type PROPS = ModalProps & {
   isOpen: boolean;
   setModalOpen: any;
@@ -56,16 +58,24 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
   const db = useSQLiteContext();
   const [displayInputs, setDisplayInputs] = useState(false);
   const { addPost } = usePostStore();
-
+  useEffect(() => {
+    return setVideoUri("");
+  }, []);
   const uploadVideo = async (postData: NewPost) => {
-    const result = await db.runAsync(
-      "INSERT INTO post (video_uri, thumbnail, name, description) VALUES (?, ?, ?,?)",
-      postData.video_uri,
-      postData.thumbnail,
-      postData.name,
-      postData.description
-    );
-    return result.lastInsertRowId;
+    console.log("we here ")
+    const validation = PostSchema.safeParse(postData);
+    if (!validation.success) {
+      console.log(validation);
+    } else {
+      // const result = await db.runAsync(
+      //   "INSERT INTO post (video_uri, thumbnail, name, description) VALUES (?, ?, ?,?)",
+      //   postData.video_uri,
+      //   postData.thumbnail,
+      //   postData.name,
+      //   postData.description
+      // );
+      // return result.lastInsertRowId;
+    }
   };
 
   const generateThumbnail = async (video: string) => {
@@ -113,12 +123,10 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
 
   const clearState = () => {
     setModalOpen(false);
-    setInterval(() => {
-      setVideoUri("");
-      setDisplayInputs(false);
-      setName("");
-      setDescription("");
-    }, 1000);
+    setVideoUri("");
+    setDisplayInputs(false);
+    setName("");
+    setDescription("");
   };
 
   const handleProcessVideo = () => {

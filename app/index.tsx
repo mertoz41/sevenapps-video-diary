@@ -14,17 +14,28 @@ import { usePostStore } from "@/stores";
 export default function MainScreen() {
   const [modalOpen, setModalOpen] = useState(false);
   const [videoUri, setVideoUri] = useState("");
+  const [viewingIndex, setViewingIndex] = useState(0);
   const db = useSQLiteContext();
   const { error, fetchPosts } = usePostStore();
   const posts = usePostStore((state) => state.posts);
   const loading = usePostStore((state) => state.loading);
+  const viewabilityConfig = {
+    waitForInteraction: true,
+    viewAreaCoveragePercentThreshold: 70,
+  };
   useEffect(() => {
     fetchPosts(db);
     // deleteAll();
   }, [fetchPosts]);
-  console.log(posts);
+  // console.log(posts);
   const deleteAll = async () => {
     await db.execAsync("DELETE FROM post");
+  };
+
+  const viewableItemChanged = ({ viewableItems }: { viewableItems: any }) => {
+    if (viewableItems.length) {
+      setViewingIndex(viewableItems[0].index);
+    }
   };
 
   const renderHeader = () => (
@@ -58,9 +69,17 @@ export default function MainScreen() {
       />
       <View className="flex-1">
         <FlatList
+          viewabilityConfig={viewabilityConfig}
+          onViewableItemsChanged={viewableItemChanged}
           data={posts}
-          renderItem={({ item }) => <PostItem key={item.id} post={item} />}
-          keyExtractor={(item) => item.id}
+          renderItem={({ item, index }) => (
+            <PostItem
+              key={item.id}
+              post={item}
+              index={index}
+              viewingIndex={viewingIndex}
+            />
+          )}
         />
       </View>
     </View>

@@ -67,7 +67,7 @@ const DetailsPage = () => {
 
       {post ? (
         <View className="items-center justify-center rounded-xl shadow-lg">
-          <VideoPlayer videoUri={post.video_uri} />
+          <VideoPlayer videoUri={post.video_uri} shouldPlay={true} />
         </View>
       ) : null}
     </View>

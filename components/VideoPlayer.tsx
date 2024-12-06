@@ -1,12 +1,25 @@
-import { View, Pressable } from "react-native";
-import { useVideoPlayer, VideoView, VideoThumbnail } from "expo-video";
+import {  Pressable } from "react-native";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { useEvent } from "expo";
+import { useEffect } from "react";
 
-const VideoPlayer = ({ videoUri }: { videoUri: string }) => {
+const VideoPlayer = ({
+  videoUri,
+  shouldPlay,
+}: {
+  videoUri: string;
+  shouldPlay: boolean;
+}) => {
   const player = useVideoPlayer(videoUri, (player) => {
     player.loop = true;
-    // player.play();
   });
+  useEffect(() => {
+    if (shouldPlay) {
+      player.play();
+    } else {
+      player.pause();
+    }
+  }, [shouldPlay]);
   const { isPlaying } = useEvent(player, "playingChange", {
     isPlaying: player.playing,
   });

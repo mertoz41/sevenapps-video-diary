@@ -1,5 +1,13 @@
 import { type SQLiteDatabase } from "expo-sqlite";
+import { z } from "zod";
 
+// export const PostSchema = z.object({
+//   video_uri: z.string(),
+//   name: z.string(),
+//   description: z.string(),
+// });
+
+// type Post = z.infer<typeof PostSchema>;
 export interface Post {
   id: string;
   video_uri: string;
