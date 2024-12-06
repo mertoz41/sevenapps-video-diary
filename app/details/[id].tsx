@@ -9,8 +9,8 @@ import VideoPlayer from "@/components/VideoPlayer";
 import { usePostStore } from "@/stores";
 
 const DetailsPage = () => {
-  const [post, setPost] = useState<Post>();
-
+  const [post, setPost] = useState<Post | unknown>();
+  const [shouldPlay, setShouldPlay] = useState(true);
   const { id, video_uri }: { id: string; video_uri: string } =
     useLocalSearchParams();
   const db = useSQLiteContext();
@@ -36,6 +36,7 @@ const DetailsPage = () => {
   const router = useRouter();
 
   const navigateToEdit = () => {
+    setShouldPlay(false);
     router.push({
       pathname: "/edit/[id]",
       params: {
@@ -67,7 +68,7 @@ const DetailsPage = () => {
 
       {post ? (
         <View className="items-center justify-center rounded-xl shadow-lg">
-          <VideoPlayer videoUri={post.video_uri} shouldPlay={true} />
+          <VideoPlayer videoUri={post.video_uri} shouldPlay={shouldPlay} />
         </View>
       ) : null}
     </View>

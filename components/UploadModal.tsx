@@ -21,7 +21,6 @@ import { usePostStore } from "@/stores";
 import * as VideoThumbnails from "expo-video-thumbnails";
 import { useEffect } from "react";
 import MetaDataForm from "./MetaDataForm";
-import { PostSchema } from "@/types";
 type PROPS = ModalProps & {
   isOpen: boolean;
   setModalOpen: any;
@@ -62,28 +61,28 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
     return setVideoUri("");
   }, []);
   const uploadVideo = async (postData: NewPost) => {
-    console.log("we here ")
-    const validation = PostSchema.safeParse(postData);
-    if (!validation.success) {
-      console.log(validation);
-    } else {
-      // const result = await db.runAsync(
-      //   "INSERT INTO post (video_uri, thumbnail, name, description) VALUES (?, ?, ?,?)",
-      //   postData.video_uri,
-      //   postData.thumbnail,
-      //   postData.name,
-      //   postData.description
-      // );
-      // return result.lastInsertRowId;
-    }
+    // console.log("we here ");
+    // const validation = PostSchema.safeParse(postData);
+    // if (!validation.success) {
+    //   console.log(validation);
+    // } else {
+    const result = await db.runAsync(
+      "INSERT INTO post (video_uri, thumbnail, name, description) VALUES (?, ?, ?,?)",
+      postData.video_uri,
+      postData.thumbnail,
+      postData.name,
+      postData.description
+    );
+    return result.lastInsertRowId;
+    // }
   };
 
-  const generateThumbnail = async (video: string) => {
-    const { uri } = await VideoThumbnails.getThumbnailAsync(video, {
-      time: 15000,
-    });
-    return uri;
-  };
+  // const generateThumbnail = async (video: string) => {
+  //   const { uri } = await VideoThumbnails.getThumbnailAsync(video, {
+  //     time: 15000,
+  //   });
+  //   return uri;
+  // };
 
   const pickVideo = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -106,15 +105,14 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
   });
 
   const mutation = useMutation({
-    mutationFn: async (video: string) => {
-      const trimmedVideo = await trimVideo(video);
-      const thumbnail = await generateThumbnail(trimmedVideo);
+    mutationFn: async (data: any) => {
+      const trimmedVideo = await trimVideo(videoUri);
+      // const thumbnail = await generateThumbnail(trimmedVideo);
       let postData = {
         video_uri: trimmedVideo,
-        thumbnail: thumbnail,
-        name: name,
-        description: description,
+        ...data,
       };
+      // console.log(postData);
       const result = await uploadVideo(postData);
       addPost({ ...postData, id: result });
       clearState();
@@ -129,8 +127,9 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
     setDescription("");
   };
 
-  const handleProcessVideo = () => {
-    mutation.mutate(videoUri);
+  const handleProcessVideo = (data: any) => {
+    mutation.mutate(data);
+    // console.log(data);
   };
 
   return (
@@ -153,16 +152,11 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
             </View>
             <ScrollView>
               {displayInputs ? (
-                <MetaDataForm
-                  setName={setName}
-                  setDescription={setDescription}
-                  name={name}
-                  description={description}
-                />
+                <MetaDataForm submitForm={handleProcessVideo} />
               ) : null}
 
               <View className="flex-1 justify-start items-center mt6">
-                {videoUri ? (
+                {videoUri && !displayInputs ? (
                   <Pressable
                     onPress={() => (isPlaying ? player.pause() : player.play())}
                   >
@@ -173,7 +167,7 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
                       allowsPictureInPicture
                     />
                   </Pressable>
-                ) : (
+                ) : displayInputs ? null : (
                   <TouchableOpacity
                     className="px-4 py-2 bg-blue-500 rounded-full self-center my-12"
                     onPress={() => pickVideo()}
@@ -181,22 +175,38 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
                     <Text className="text-white text-3xl">choose video</Text>
                   </TouchableOpacity>
                 )}
-
-                {!videoUri ? null : displayInputs ? (
+                {/* {videoUri ? (
+                  displayInputs ? null : (
+                    <Pressable
+                      onPress={() =>
+                        isPlaying ? player.pause() : player.play()
+                      }
+                    >
+                      <VideoView
+                        style={{ height: 500, width: 270 }}
+                        player={player}
+                        nativeControls={false}
+                        allowsPictureInPicture
+                      />
+                    </Pressable>
+                  )
+                ) : (
                   <TouchableOpacity
                     className="px-4 py-2 bg-blue-500 rounded-full self-center my-12"
-                    onPress={() => handleProcessVideo()}
+                    onPress={() => pickVideo()}
                   >
-                    <Text className="text-white text-3xl">upload</Text>
+                    <Text className="text-white text-3xl">choose video</Text>
                   </TouchableOpacity>
-                ) : (
+                )} */}
+
+                {videoUri && !displayInputs ? (
                   <TouchableOpacity
                     className="px-4 py-2 bg-blue-500 rounded-full self-center my-12"
                     onPress={() => setDisplayInputs(true)}
                   >
                     <Text className="text-white text-3xl">advance</Text>
                   </TouchableOpacity>
-                )}
+                ) : null}
               </View>
             </ScrollView>
           </View>

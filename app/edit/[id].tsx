@@ -18,11 +18,11 @@ const EditPage = () => {
 
   const router = useRouter();
 
-  const handleSave = async () => {
+  const handleSave = async (data: any) => {
     const result = await db.runAsync(
       "UPDATE post SET name = ?, description = ? WHERE id = ?",
-      newName,
-      newDescription,
+      data.name,
+      data.description,
       id
     );
     router.back();
@@ -31,12 +31,7 @@ const EditPage = () => {
   return (
     <View className="flex-1 p-6 bg-white">
       <Text className="text-3xl font-semibold mb-6">Edit Metadata</Text>
-      <MetaDataForm
-        setName={setNewName}
-        setDescription={setNewDescription}
-        name={newName}
-        description={newDescription}
-      />
+      <MetaDataForm submitForm={handleSave} />
       <TouchableOpacity
         className="px-4 py-2 border-2 border-black rounded-full self-center"
         onPress={handleSave}
