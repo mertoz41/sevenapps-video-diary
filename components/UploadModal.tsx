@@ -6,21 +6,19 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  Pressable,
   TouchableWithoutFeedback,
   ScrollView,
 } from "react-native";
-import { useVideoPlayer, VideoView } from "expo-video";
-import { useEvent } from "expo";
 import { useState } from "react";
 import { FFmpegKit } from "ffmpeg-kit-react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useMutation } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import { usePostStore } from "@/stores";
-import * as VideoThumbnails from "expo-video-thumbnails";
 import { useEffect } from "react";
 import MetaDataForm from "./MetaDataForm";
+import VideoSlider from "./VideoSlider";
+import { formatMilliseconds } from "@/utils";
 type PROPS = ModalProps & {
   isOpen: boolean;
   setModalOpen: any;
@@ -34,7 +32,7 @@ type NewPost = {
   description: string;
 };
 
-const trimVideo = async (videoUri: string) => {
+const trimVideo = async (videoUri: string, vidStartTime: string) => {
   const newVidUri = videoUri.replace("file://", "");
   const randomString = Math.random().toString(36).substring(2, 8);
   const outputUri = `${videoUri.substring(
@@ -43,7 +41,7 @@ const trimVideo = async (videoUri: string) => {
   )}/${randomString}.mp4`;
 
   await FFmpegKit.execute(
-    `-y -ss 0 -i ${newVidUri} -t 5 -c copy ${outputUri}`
+    `-y -ss ${vidStartTime} -i ${newVidUri} -t 5 -c copy ${outputUri}`
   ).then(async (session) => {
     return outputUri;
   });
@@ -51,38 +49,24 @@ const trimVideo = async (videoUri: string) => {
 };
 
 const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
   const [videoUri, setVideoUri] = useState("");
   const db = useSQLiteContext();
   const [displayInputs, setDisplayInputs] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [vidStartTime, setVidStartTime] = useState("");
   const { addPost } = usePostStore();
   useEffect(() => {
     return setVideoUri("");
   }, []);
   const uploadVideo = async (postData: NewPost) => {
-    // console.log("we here ");
-    // const validation = PostSchema.safeParse(postData);
-    // if (!validation.success) {
-    //   console.log(validation);
-    // } else {
     const result = await db.runAsync(
-      "INSERT INTO post (video_uri, thumbnail, name, description) VALUES (?, ?, ?,?)",
+      "INSERT INTO post (video_uri, name, description) VALUES (?, ?,?)",
       postData.video_uri,
-      postData.thumbnail,
       postData.name,
       postData.description
     );
     return result.lastInsertRowId;
-    // }
   };
-
-  // const generateThumbnail = async (video: string) => {
-  //   const { uri } = await VideoThumbnails.getThumbnailAsync(video, {
-  //     time: 15000,
-  //   });
-  //   return uri;
-  // };
 
   const pickVideo = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -92,27 +76,18 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
       quality: 1,
     });
     if (!result.canceled) {
+      setDuration(result.assets[0].duration);
       setVideoUri(result.assets[0].uri);
     }
   };
 
-  const player = useVideoPlayer(videoUri, (player) => {
-    player.loop = true;
-    // player.play();
-  });
-  const { isPlaying } = useEvent(player, "playingChange", {
-    isPlaying: player.playing,
-  });
-
   const mutation = useMutation({
     mutationFn: async (data: any) => {
-      const trimmedVideo = await trimVideo(videoUri);
-      // const thumbnail = await generateThumbnail(trimmedVideo);
+      const trimmedVideo = await trimVideo(videoUri, vidStartTime);
       let postData = {
         video_uri: trimmedVideo,
         ...data,
       };
-      // console.log(postData);
       const result = await uploadVideo(postData);
       addPost({ ...postData, id: result });
       clearState();
@@ -123,13 +98,16 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
     setModalOpen(false);
     setVideoUri("");
     setDisplayInputs(false);
-    setName("");
-    setDescription("");
   };
 
   const handleProcessVideo = (data: any) => {
     mutation.mutate(data);
-    // console.log(data);
+  };
+
+  const saveStartTime = (times: any) => {
+    const formattedTime = formatMilliseconds(times);
+    setVidStartTime(formattedTime);
+    setDisplayInputs(true);
   };
 
   return (
@@ -137,7 +115,7 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
       animationType="fade"
       transparent={true}
       visible={isOpen}
-      onRequestClose={() => setModalOpen(false)} // Handles the back button on Android
+      onRequestClose={() => setModalOpen(false)}
     >
       <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
         <View style={styles.modalOverlay}>
@@ -157,16 +135,11 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
 
               <View className="flex-1 justify-start items-center mt6">
                 {videoUri && !displayInputs ? (
-                  <Pressable
-                    onPress={() => (isPlaying ? player.pause() : player.play())}
-                  >
-                    <VideoView
-                      style={{ height: 500, width: 270 }}
-                      player={player}
-                      nativeControls={false}
-                      allowsPictureInPicture
-                    />
-                  </Pressable>
+                  <VideoSlider
+                    saveStartTime={saveStartTime}
+                    videoUri={videoUri}
+                    duration={duration}
+                  />
                 ) : displayInputs ? null : (
                   <TouchableOpacity
                     className="px-4 py-2 bg-blue-500 rounded-full self-center my-12"
@@ -175,38 +148,6 @@ const UploadModal = ({ isOpen, setModalOpen }: PROPS) => {
                     <Text className="text-white text-3xl">choose video</Text>
                   </TouchableOpacity>
                 )}
-                {/* {videoUri ? (
-                  displayInputs ? null : (
-                    <Pressable
-                      onPress={() =>
-                        isPlaying ? player.pause() : player.play()
-                      }
-                    >
-                      <VideoView
-                        style={{ height: 500, width: 270 }}
-                        player={player}
-                        nativeControls={false}
-                        allowsPictureInPicture
-                      />
-                    </Pressable>
-                  )
-                ) : (
-                  <TouchableOpacity
-                    className="px-4 py-2 bg-blue-500 rounded-full self-center my-12"
-                    onPress={() => pickVideo()}
-                  >
-                    <Text className="text-white text-3xl">choose video</Text>
-                  </TouchableOpacity>
-                )} */}
-
-                {videoUri && !displayInputs ? (
-                  <TouchableOpacity
-                    className="px-4 py-2 bg-blue-500 rounded-full self-center my-12"
-                    onPress={() => setDisplayInputs(true)}
-                  >
-                    <Text className="text-white text-3xl">advance</Text>
-                  </TouchableOpacity>
-                ) : null}
               </View>
             </ScrollView>
           </View>
@@ -220,7 +161,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent background
+    backgroundColor: "rgba(0, 0, 0, 0.5)", 
   },
   modalContent: {
     width: "80%",
